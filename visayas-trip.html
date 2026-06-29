@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>The Visayan Sea Logbook · Iloilo · Guimaras · Gigantes · Bacolod</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,800&family=Outfit:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+<style>
+  :root{
+    --sea-900:#072b34; --sea-800:#0a3742; --sea-700:#0f4a58;
+    --sea-600:#155e6e; --sea-400:#2e97a8; --sea-200:#9cc8cf;
+    --mist:#e9f1ef; --paper:#f5f1e7; --card:#ffffff;
+    --mango:#e6952f; --mango-soft:#f2b75f; --coral:#d85d43; --green:#3e8e63;
+    --slate:#6b7e84; --ink:#0a262e; --muted:#5d7177; --line:rgba(10,38,46,.12);
+    --d1:var(--mango); --d2:var(--sea-400); --d3:var(--coral); --d4:var(--green); --d5:var(--slate);
+    --display:'Fraunces',Georgia,serif; --body:'Outfit',system-ui,sans-serif; --mono:'Space Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; font-family:var(--body); color:var(--ink); background:var(--mist);
+    -webkit-font-smoothing:antialiased; line-height:1.6; overflow-x:hidden;
+  }
+  a{color:var(--sea-600)}
+  .wrap{max-width:1080px; margin:0 auto; padding:0 24px}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative; color:#eaf4f3; padding:74px 0 56px;
+    background:
+      radial-gradient(1200px 520px at 78% -8%, rgba(46,151,168,.55), transparent 60%),
+      radial-gradient(900px 480px at 8% 108%, rgba(230,149,47,.28), transparent 60%),
+      linear-gradient(160deg,var(--sea-900),var(--sea-700) 70%,var(--sea-800));
+    overflow:hidden;
+  }
+  .hero::before{ /* faint contour/wave texture */
+    content:""; position:absolute; inset:0; opacity:.16; pointer-events:none;
+    background-image:
+      repeating-linear-gradient(115deg, transparent 0 38px, rgba(255,255,255,.5) 38px 39px);
+    -webkit-mask-image:radial-gradient(120% 100% at 50% 0%, #000 40%, transparent 78%);
+            mask-image:radial-gradient(120% 100% at 50% 0%, #000 40%, transparent 78%);
+  }
+  .hero .wrap{position:relative}
+  .eyebrow{
+    font-family:var(--mono); font-size:12.5px; letter-spacing:.32em; text-transform:uppercase;
+    color:var(--mango-soft); margin:0 0 22px;
+  }
+  .hero h1{
+    font-family:var(--display); font-weight:600; font-optical-sizing:auto;
+    font-size:clamp(40px,7.2vw,80px); line-height:.98; letter-spacing:-.02em; margin:0 0 4px;
+  }
+  .hero h1 em{font-style:italic; color:var(--mango-soft); font-weight:500}
+  .hero .sub{
+    font-size:clamp(16px,2.2vw,21px); color:#c7e0df; max-width:60ch; margin:18px 0 0; font-weight:300;
+  }
+  .route-line{
+    margin:30px 0 0; font-family:var(--mono); font-size:13px; letter-spacing:.04em; color:#bcd9d8;
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+  }
+  .route-line b{color:#fff; font-weight:700}
+  .route-line .arr{color:var(--mango-soft)}
+
+  /* log strip */
+  .log{
+    position:relative; display:grid; grid-template-columns:repeat(4,1fr); gap:1px;
+    margin:44px 0 0; border:1px solid rgba(255,255,255,.16); background:rgba(255,255,255,.16);
+    border-radius:12px; overflow:hidden;
+  }
+  .log div{background:rgba(7,43,52,.55); padding:18px 18px 16px; backdrop-filter:blur(2px)}
+  .log .num{font-family:var(--mono); font-weight:700; font-size:clamp(22px,3.4vw,30px); color:#fff}
+  .log .lbl{font-size:11.5px; letter-spacing:.16em; text-transform:uppercase; color:var(--sea-200); margin-top:5px}
+  @media(max-width:620px){ .log{grid-template-columns:repeat(2,1fr)} }
+
+  /* ---------- MAP ---------- */
+  .map-sec{padding:54px 0 8px}
+  .sec-head{margin:0 0 22px}
+  .sec-head .tag{font-family:var(--mono); font-size:12px; letter-spacing:.26em; text-transform:uppercase; color:var(--sea-600)}
+  .sec-head h2{font-family:var(--display); font-weight:600; font-size:clamp(27px,4.4vw,40px); letter-spacing:-.015em; margin:8px 0 6px}
+  .sec-head p{margin:0; color:var(--muted); max-width:64ch}
+  .map-frame{
+    position:relative; border-radius:16px; overflow:hidden;
+    box-shadow:0 24px 60px -28px rgba(7,43,52,.6), 0 0 0 1px var(--line);
+  }
+  #map{height:540px; width:100%; background:#cfe0e2}
+  @media(max-width:640px){ #map{height:400px} }
+
+  .legend{
+    position:absolute; z-index:500; right:14px; bottom:14px;
+    background:rgba(255,255,255,.94); border:1px solid var(--line); border-radius:12px;
+    padding:11px 13px; font-size:12.5px; box-shadow:0 8px 24px -12px rgba(7,43,52,.5);
+  }
+  .legend .lh{font-family:var(--mono); font-size:10.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin-bottom:7px}
+  .legend ul{list-style:none; margin:0; padding:0; display:grid; gap:5px}
+  .legend li{display:flex; align-items:center; gap:8px; line-height:1.2}
+  .legend .dot{width:13px; height:13px; border-radius:50%; flex:none; box-shadow:0 0 0 2px #fff inset}
+  @media(max-width:520px){ .legend{display:none} }
+
+  /* leaflet pins */
+  .pin{
+    width:27px; height:27px; border-radius:50%; background:var(--c);
+    border:2.5px solid #fff; box-shadow:0 3px 8px rgba(7,43,52,.45);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--mono); font-weight:700; font-size:12px; color:#fff;
+    transition:transform .15s ease;
+  }
+  .pin-wrap:hover .pin, .pin.is-active{transform:scale(1.28)}
+  .pin.is-active{box-shadow:0 0 0 4px rgba(255,255,255,.6),0 3px 10px rgba(7,43,52,.5)}
+  .leaflet-popup-content-wrapper{border-radius:12px; box-shadow:0 14px 34px -14px rgba(7,43,52,.6)}
+  .leaflet-popup-content{margin:13px 15px; font-family:var(--body)}
+  .pop .pop-day{font-family:var(--mono); font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--sea-600)}
+  .pop h4{font-family:var(--display); font-weight:600; font-size:17px; margin:3px 0 5px; color:var(--ink)}
+  .pop p{margin:0; font-size:13px; color:#37494d; line-height:1.5}
+
+  /* ---------- ITINERARY ---------- */
+  .days{padding:30px 0 10px}
+  .day{
+    display:grid; grid-template-columns:96px 1fr; gap:28px; padding:34px 0;
+    border-top:1px solid var(--line);
+  }
+  .day:first-of-type{border-top:none}
+  .day-rail{position:relative}
+  .day-no{
+    font-family:var(--display); font-weight:600; font-size:54px; line-height:.8;
+    color:var(--dc); letter-spacing:-.03em;
+  }
+  .day-rail .stamp{
+    margin-top:10px; font-family:var(--mono); font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--muted);
+  }
+  .day-rail .chip{
+    display:inline-block; margin-top:12px; font-size:11px; font-weight:600; letter-spacing:.04em;
+    color:#fff; background:var(--dc); padding:4px 9px; border-radius:999px;
+  }
+  .day-body h3{font-family:var(--display); font-weight:600; font-size:clamp(22px,3.4vw,29px); margin:2px 0 4px; letter-spacing:-.01em}
+  .day-body .theme{margin:0 0 18px; color:var(--muted); font-size:14.5px}
+
+  .stop{
+    display:grid; grid-template-columns:34px 1fr; gap:14px; padding:13px 14px; margin:0 0 9px;
+    background:var(--card); border:1px solid var(--line); border-left:3px solid var(--dc);
+    border-radius:11px; cursor:pointer; transition:box-shadow .15s ease, transform .15s ease;
+  }
+  .stop:hover{box-shadow:0 12px 28px -18px rgba(7,43,52,.55); transform:translateY(-1px)}
+  .stop:focus-visible{outline:2.5px solid var(--sea-400); outline-offset:2px}
+  .stop .seq{
+    width:30px; height:30px; border-radius:50%; background:var(--dc); color:#fff;
+    font-family:var(--mono); font-weight:700; font-size:12.5px;
+    display:flex; align-items:center; justify-content:center; align-self:start;
+  }
+  .stop .seq.mode{background:transparent; color:var(--dc); font-size:16px; border:1.5px dashed var(--dc)}
+  .stop h4{margin:1px 0 4px; font-size:16px; font-weight:600; display:flex; flex-wrap:wrap; gap:8px; align-items:baseline}
+  .stop h4 .t{font-family:var(--mono); font-size:11px; color:var(--muted); font-weight:400; letter-spacing:.03em}
+  .stop p{margin:0; font-size:14px; color:#3a4d51}
+  .stop .pinhint{font-family:var(--mono); font-size:10.5px; color:var(--sea-600); opacity:0; transition:opacity .15s}
+  .stop:hover .pinhint{opacity:.85}
+
+  .thread{
+    grid-column:1 / -1; margin:6px 0 2px; padding:14px 16px; border-radius:11px;
+    background:linear-gradient(120deg, rgba(46,151,168,.10), rgba(230,149,47,.10));
+    border:1px dashed var(--sea-400); font-size:14px; color:#27424a;
+  }
+  .thread b{color:var(--coral)}
+  @media(max-width:680px){
+    .day{grid-template-columns:1fr; gap:14px; padding:28px 0}
+    .day-rail{display:flex; align-items:baseline; gap:14px; flex-wrap:wrap}
+    .day-no{font-size:40px}
+    .day-rail .stamp,.day-rail .chip{margin-top:0}
+  }
+
+  /* ---------- LEDGER ---------- */
+  .ledger-sec{background:var(--sea-900); color:#e7f2f1; padding:60px 0 70px; margin-top:30px}
+  .ledger-sec .tag{color:var(--mango-soft)}
+  .ledger-sec h2{color:#fff}
+  .ledger-sec .sec-head p{color:#a9cccb}
+  .ledger{
+    width:100%; border-collapse:collapse; margin-top:22px; font-size:14.5px;
+    background:rgba(255,255,255,.03); border-radius:12px; overflow:hidden;
+  }
+  .ledger th,.ledger td{padding:14px 16px; text-align:left; border-bottom:1px solid rgba(255,255,255,.1)}
+  .ledger th{font-family:var(--mono); font-size:11px; letter-spacing:.13em; text-transform:uppercase; color:var(--sea-200); font-weight:700}
+  .ledger td.num,.ledger th.num{text-align:right; font-family:var(--mono); white-space:nowrap}
+  .ledger tr:last-child td{border-bottom:none}
+  .ledger .total td{background:rgba(230,149,47,.14); font-weight:600}
+  .ledger .total td.num{color:var(--mango-soft); font-size:16px}
+  .ledger .item{font-weight:500; color:#fff}
+  .ledger .sub{display:block; font-size:12px; color:#9bbfbe; font-weight:300; margin-top:2px; font-family:var(--body)}
+  .badge{font-family:var(--mono); font-size:10.5px; letter-spacing:.06em; padding:3px 8px; border-radius:999px; background:rgba(62,142,99,.25); color:#a9e2c0; border:1px solid rgba(62,142,99,.5)}
+  .foot-note{margin-top:18px; font-size:13px; color:#9bbfbe; max-width:70ch}
+  @media(max-width:600px){
+    .ledger, .ledger thead, .ledger tbody, .ledger th, .ledger td, .ledger tr{display:block}
+    .ledger thead{display:none}
+    .ledger tr{border-bottom:1px solid rgba(255,255,255,.12); padding:6px 0}
+    .ledger td{border:none; padding:5px 4px}
+    .ledger td.num{text-align:left}
+    .ledger td.num::before{content:attr(data-l)" "; color:var(--sea-200); font-family:var(--mono); font-size:11px; text-transform:uppercase; letter-spacing:.1em}
+  }
+
+  footer{padding:30px 0 50px; background:var(--sea-900); color:#7fa0a0; font-size:12.5px; text-align:center; font-family:var(--mono); letter-spacing:.04em}
+
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto}
+    .pin, .stop{transition:none}
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <p class="eyebrow">Western Visayas · Visayan Sea · Jun 30 – Jul 4, 2026</p>
+    <h1>The Visayan Sea<br><em>Logbook</em></h1>
+    <p class="sub">Five days of crossings out of one Iloilo basecamp — a mango island, a far-northern archipelago, a sugar baron's ruin across the strait, and a stairway billed as heaven. For three travelers.</p>
+
+    <div class="route-line">
+      <b>Iloilo</b><span class="arr">→</span><b>Guimaras</b><span class="arr">→</span><b>Gigantes</b><span class="arr">→</span><b>Bacolod</b><span class="arr">→</span><b>Iloilo</b>
+    </div>
+
+    <div class="log">
+      <div><div class="num">5</div><div class="lbl">Days</div></div>
+      <div><div class="num">25</div><div class="lbl">Stops mapped</div></div>
+      <div><div class="num">2&thinsp;·&thinsp;5</div><div class="lbl">Flights · sea crossings</div></div>
+      <div><div class="num">₱11.8k</div><div class="lbl">Per person, settled</div></div>
+    </div>
+  </div>
+</header>
+
+<section class="map-sec">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="tag">The route · OpenStreetMap</span>
+      <h2>One basecamp, four directions</h2>
+      <p>Pins are numbered in visiting order and colored by day; each dashed thread traces that day's loop. Tap any pin — or any stop in the itinerary below — to read what makes the place worth the crossing.</p>
+    </div>
+    <div class="map-frame">
+      <div id="map"></div>
+      <div class="legend" aria-hidden="true">
+        <div class="lh">Days</div>
+        <ul>
+          <li><span class="dot" style="background:var(--d1)"></span>1 · Guimaras</li>
+          <li><span class="dot" style="background:var(--d2)"></span>2 · Gigantes</li>
+          <li><span class="dot" style="background:var(--d3)"></span>3 · Bacolod</li>
+          <li><span class="dot" style="background:var(--d4)"></span>4 · Iloilo</li>
+          <li><span class="dot" style="background:var(--d5)"></span>5 · Fly home</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="days">
+  <div class="wrap" id="itinerary"><!-- days injected here --></div>
+</section>
+
+<section class="ledger-sec">
+  <div class="wrap">
+    <div class="sec-head">
+      <span class="tag">The manifest</span>
+      <h2>What the voyage cost</h2>
+      <p>Big-ticket items settled in advance — flights and the Airbnb fronted by Vien, the sea legs booked through Klook. Split three ways.</p>
+    </div>
+    <table class="ledger">
+      <thead>
+        <tr><th>Item</th><th class="num">Total</th><th class="num">Per person</th><th>Status</th></tr>
+      </thead>
+      <tbody>
+        <tr><td class="item">Flights<span class="sub">Manila ⇄ Iloilo · paid by Vien</span></td><td class="num" data-l="Total">₱14,225.22</td><td class="num" data-l="Per person">₱4,741.74</td><td><span class="badge">Settled</span></td></tr>
+        <tr><td class="item">Accommodation<span class="sub">Airbnb, Iloilo City · paid by Vien</span></td><td class="num" data-l="Total">₱10,654.69</td><td class="num" data-l="Per person">₱3,551.56</td><td><span class="badge">Settled</span></td></tr>
+        <tr><td class="item">Gigantes Island day tour<span class="sub">Klook · join-in with shuttle service</span></td><td class="num" data-l="Total">₱6,297.00</td><td class="num" data-l="Per person">₱2,099.00</td><td><span class="badge">Settled</span></td></tr>
+        <tr><td class="item">OceanJet · Iloilo → Bacolod<span class="sub">Klook · fast-craft ferry</span></td><td class="num" data-l="Total">₱2,145.00</td><td class="num" data-l="Per person">₱715.00</td><td><span class="badge">Settled</span></td></tr>
+        <tr><td class="item">OceanJet · Bacolod → Iloilo<span class="sub">Klook · return crossing</span></td><td class="num" data-l="Total">₱2,145.00</td><td class="num" data-l="Per person">₱715.00</td><td><span class="badge">Settled</span></td></tr>
+        <tr class="total"><td class="item">Settled total</td><td class="num" data-l="Total">₱35,466.91</td><td class="num" data-l="Per person">₱11,822.30</td><td></td></tr>
+      </tbody>
+    </table>
+    <p class="foot-note">Paid on the ground, not in this ledger: the Guimaras private tour with guide Kuya Den Lester (₱1,700 for 3 ≈ ₱567 each), plus small entrance fees — Garin Farm ₱150 + ₱90, The Ruins ₱150 (₱80 students), Guisi Lighthouse, and per-islet eco-fees in Gigantes.</p>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">Compiled from the trip sheet · 25 waypoints · 122.0°–123.3° E across the Visayan Sea</div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script>
+  const dayColors = {1:'#e6952f',2:'#2e97a8',3:'#d85d43',4:'#3e8e63',5:'#6b7e84'};
+  const dayMeta = {
+    1:{title:'Guimaras — Mango Country', theme:'Dawn flight, then a 15-minute strait crossing into the Philippines\u2019 sweetest island.'},
+    2:{title:'Islas de Gigantes — The Far North', theme:'A pre-dawn pickup for the long haul to Carles and the Visayan Sea\u2019s limestone karsts.'},
+    3:{title:'Bacolod — Across to Negros', theme:'OceanJet over the Guimaras Strait to sugar country, inasal, and a romantic ruin.'},
+    4:{title:'Iloilo — Faith & Heritage', theme:'A southern pilgrimage farm, then the old Chinese-mestizo grandeur of Molo.'},
+    5:{title:'Fly Home', theme:'The loop closes where it opened five days earlier.'}
+  };
+
+  // ---- Hardcoded waypoints, in visiting order ----
+  const stops = [
+    // DAY 1 — Guimaras
+    {id:'ilo-air-in', day:1, n:1, mode:'\u2708', time:'05:00', name:'Iloilo International Airport', lat:10.8330, lng:122.4942,
+     insight:'You land before sunrise in Cabatuan, a fair drive from the city \u2014 hence the smart plan to drop luggage at the Airbnb first, then cross to Guimaras.'},
+    {id:'parola', day:1, n:2, mode:'\u26F4', time:'06:00', name:'Parola Wharf \u2192 Jordan ferry', lat:10.6925, lng:122.5840,
+     insight:'The Iloilo\u2013Jordan ferry takes barely 15\u201320 minutes \u2014 one of the shortest inter-island hops in the country, which is exactly why a whole island province works as a single day trip.'},
+    {id:'jordan', day:1, n:3, time:'07:00', name:'Jordan Wharf & World\u2019s Smallest Plaza', lat:10.6571, lng:122.5959,
+     insight:'Jordan is Guimaras\u2019 capital, and home to its quirkiest brag: the \u201cSmallest Plaza in the World,\u201d a public plaza you can cross in a few steps.'},
+    {id:'windfarm', day:1, n:4, name:'San Lorenzo Wind Farm', lat:10.6042, lng:122.7361,
+     insight:'The 27-turbine San Lorenzo Wind Farm (54 MW) was among the first commercial wind farms in the Visayas; its access road doubles as the island\u2019s most photographed viewpoint.'},
+    {id:'pitstop', day:1, n:5, name:'The Pitstop \u2014 Mango Pizza', lat:10.6520, lng:122.6160,
+     insight:'Guimaras grows what\u2019s reputed to be some of the sweetest mango on earth \u2014 served at Malaca\u00f1ang and exported abroad. The province guards its fruit-fly-free status so fiercely that bringing in outside mango is restricted. The Pitstop turns that pride into mango pizza.'},
+    {id:'trappist', day:1, n:6, name:'Trappist Monastery', lat:10.6306, lng:122.5853,
+     insight:'Our Lady of the Philippines is the only Trappist monastery in the country (est. 1972). Its pasalubong shop \u2014 mango jam, mango tarts, piaya, polvoron \u2014 is the real reason every van stops here.'},
+    {id:'guisi', day:1, n:7, name:'Guisi Lighthouse', lat:10.4178, lng:122.5247,
+     insight:'Faro de Punta Luzaran (1894\u201396), built of French metal and English cement, is among the oldest lighthouses in the Philippines. The keeper\u2019s house is a roofless ruin, but you can still climb the rusted spiral for a sweeping Panay Gulf view.'},
+    {id:'alubihod', day:1, n:8, name:'Alubihod Beach', lat:10.4356, lng:122.5394,
+     insight:'Alubihod\u2019s calm, shallow cove is Guimaras\u2019 default swim-and-sunset stop and the jump-off for short island hops \u2014 a gentle close before the ferry back to Iloilo.'},
+
+    // DAY 2 — Gigantes
+    {id:'bancal', day:2, n:9, mode:'\u26F4', time:'08:30', name:'Bancal Port, Carles', lat:10.5650, lng:123.1430,
+     insight:'Don\u2019t be fooled by \u201cday tour\u201d: Gigantes sits off Carles at Iloilo\u2019s far northern tip \u2014 roughly four hours by land before you even board. That\u2019s why pickup is at 05:00. The islands run on scheduled generator power and thin signal.'},
+    {id:'pulupandan', day:2, n:10, time:'09:30', name:'Pulupandan Islet', lat:10.5530, lng:123.2720,
+     insight:'A speck of an islet famous for a single lone coconut palm against endless blue \u2014 the warm-up photo stop before the headliners.'},
+    {id:'cabugao', day:2, n:11, name:'Cabugao Gamay', lat:10.5547, lng:123.2858,
+     insight:'The \u201cface of Gigantes\u201d: a curving sandbar pinched between two limestone hills. The classic shot is from the rocky viewpoint above \u2014 the reason it\u2019s nicknamed the \u201cselfie island.\u201d'},
+    {id:'tangke', day:2, n:12, name:'Tangke Saltwater Lagoon', lat:10.5419, lng:123.2950,
+     insight:'\u201cTangke\u201d means tank \u2014 a hidden saltwater pool walled by limestone cliffs that only fills deep enough to swim at high tide, so tour timing is everything. A pocket-sized El Nido.'},
+    {id:'antonia', day:2, n:13, time:'13:30', name:'Antonia Beach', lat:10.5497, lng:123.2906,
+     insight:'A sheltered white-sand beach and the usual lunch base \u2014 where the tour\u2019s unlimited steamed scallops appear. Gigantes is the \u201cScallops Capital of the Philippines,\u201d with scallops sometimes sold for as little as \u20b11 a piece.'},
+    {id:'bantigue', day:2, n:14, name:'Bantigue Sandbar (\u201cMini Boracay\u201d)', lat:10.5380, lng:123.2740,
+     insight:'A long golden sandbar that rises and reshapes with the tide; locals call it Mini Boracay. At low tide you can walk far out into the Visayan Sea.'},
+
+    // DAY 3 — Bacolod
+    {id:'ilo-port', day:3, n:15, mode:'\u26F4', time:'07:20', name:'Iloilo Port \u2192 OceanJet', lat:10.6985, lng:122.5818,
+     insight:'The OceanJet fast-craft crosses the Guimaras Strait to Negros in about 90 minutes \u2014 a genuinely scenic open-sea run between two of Western Visayas\u2019 biggest cities.'},
+    {id:'bacolod-port', day:3, n:16, name:'Bacolod (BREDCO Port)', lat:10.6760, lng:122.9445,
+     insight:'Welcome to the \u201cCity of Smiles,\u201d home of the MassKara Festival and capital of the country\u2019s sugar heartland.'},
+    {id:'artdistrict', day:3, n:17, time:'09:00', name:'Bacolod Art District', lat:10.6789, lng:122.9612,
+     insight:'In Mandalagan, warehouse walls turned into murals, with cafes and bars threaded through the street art \u2014 Bacolod\u2019s creative pocket.'},
+    {id:'aidas', day:3, n:18, time:'11:00', name:'Aida\u2019s Chicken Inasal, Manokan Country', lat:10.6726, lng:122.9489,
+     insight:'Manokan Country is the open-air row that birthed chicken inasal, and Aida\u2019s is its most famous name. Marinated in calamansi, lemongrass and annatto and basted over coals \u2014 this is the dish the whole country imitates.'},
+    {id:'ruins', day:3, n:19, time:'13:00', name:'The Ruins, Talisay', lat:10.7383, lng:122.9387,
+     insight:'The \u201cTaj Mahal of Negros\u201d: sugar baron Don Mariano Lacson built this Italianate mansion in the 1920s for his Portuguese wife Maria Braga, who died while pregnant. Guerrillas torched it in WWII to deny the Japanese a headquarters \u2014 it burned three days, leaving the egg-white-and-concrete shell still standing.'},
+
+    // DAY 4 — Iloilo
+    {id:'garin', day:4, n:20, time:'07:00', name:'Garin Farm Pilgrimage, San Joaquin', lat:10.5972, lng:122.0391,
+     insight:'An agri-tourism farm with a twist of faith: a 480-step \u201cStairway to Heaven\u201d climbs past biblical dioramas to an all-white \u201cHeaven on Earth\u201d tableau. The note to pack sunglasses, cap, umbrella and fan is spot-on \u2014 the white summit is blinding and shadeless.'},
+    {id:'molo-church', day:4, n:21, name:'Molo Church (St. Anne Parish)', lat:10.6967, lng:122.5453,
+     insight:'A coral-stone Gothic-Renaissance church often called \u201cthe feminist church\u201d \u2014 every saint statue lining its nave is a woman. Molo was once a wealthy Chinese-mestizo enclave, and the grandeur shows.'},
+    {id:'molo-mansion', day:4, n:22, name:'Molo Mansion', lat:10.6970, lng:122.5448,
+     insight:'The 1920s Yusay-Consing mansion faces the church \u2014 a restored Spanish-colonial heritage house, now a cafe and pasalubong stop.'},
+    {id:'museo', day:4, n:23, name:'Museo Iloilo', lat:10.6969, lng:122.5664,
+     insight:'The first government-run museum outside Manila (1971): pre-Hispanic gold, burial artifacts, and relics from WWII shipwrecks in these very waters.'},
+    {id:'festive', day:4, n:24, name:'Festive Walk Mall, Mandurriao', lat:10.7124, lng:122.5486,
+     insight:'The esplanade of modern Iloilo\u2019s lifestyle district \u2014 a fitting last-night dinner-and-stroll before the morning flight.'},
+
+    // DAY 5 — Fly home
+    {id:'ilo-air-out', day:5, n:25, mode:'\u2708', name:'Iloilo International Airport', lat:10.8330, lng:122.4942,
+     insight:'A relaxed final morning \u2014 Grab to the airport and the short hop back to Manila.'}
+  ];
+
+  /* ---------- Build the map ---------- */
+  const map = L.map('map', {scrollWheelZoom:false, zoomControl:true});
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom:18, attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+
+  const markers = {};
+  const bounds = [];
+  let activeEl = null, activeMarker = null;
+
+  stops.forEach(s=>{
+    const ll=[s.lat,s.lng];
+    bounds.push(ll);
+    const icon=L.divIcon({
+      className:'pin-wrap',
+      html:`<div class="pin" style="--c:${dayColors[s.day]}">${s.n}</div>`,
+      iconSize:[27,27], iconAnchor:[13,13], popupAnchor:[0,-14]
+    });
+    const m=L.marker(ll,{icon, title:s.name}).addTo(map);
+    m.bindPopup(`<div class="pop"><span class="pop-day">Day ${s.day}${s.time?' \u00b7 '+s.time:''}</span><h4>${s.name}</h4><p>${s.insight}</p></div>`,{maxWidth:280});
+    markers[s.id]=m;
+  });
+
+  // per-day dashed route threads (visiting order within each day)
+  for(let d=1; d<=5; d++){
+    const pts=stops.filter(s=>s.day===d).map(s=>[s.lat,s.lng]);
+    if(pts.length>1){
+      L.polyline(pts,{color:dayColors[d], weight:2.5, opacity:.7, dashArray:'2 8', lineCap:'round'}).addTo(map);
+    }
+  }
+
+  map.fitBounds(bounds,{padding:[45,45]});
+
+  /* ---------- Build the itinerary ---------- */
+  const root=document.getElementById('itinerary');
+  const threads={
+    3:'<b>A thread worth noticing.</b> The sugar baron behind The Ruins, Don Mariano Lacson, traced his family to <strong>Molo, Iloilo</strong> \u2014 the very district on tomorrow\u2019s itinerary. Negros\u2019 sugar fortunes were largely built by Ilonggo families who crossed this same strait.'
+  };
+
+  for(let d=1; d<=5; d++){
+    const meta=dayMeta[d];
+    const daystops=stops.filter(s=>s.day===d);
+    const wkday=['Tuesday','Wednesday','Thursday','Friday','Saturday'][d-1];
+    const date=['Jun 30','Jul 1','Jul 2','Jul 3','Jul 4'][d-1];
+
+    const section=document.createElement('section');
+    section.className='day';
+    section.style.setProperty('--dc',dayColors[d]);
+
+    let stopsHtml='';
+    daystops.forEach(s=>{
+      const seq = s.mode ? `<span class="seq mode">${s.mode}</span>` : `<span class="seq">${s.n}</span>`;
+      stopsHtml += `
+        <div class="stop" tabindex="0" role="button" data-id="${s.id}" aria-label="Show ${s.name} on map">
+          ${seq}
+          <div>
+            <h4>${s.name} ${s.time?`<span class="t">${s.time}</span>`:''}</h4>
+            <p>${s.insight}</p>
+            <span class="pinhint">\u25c9 show on map</span>
+          </div>
+        </div>`;
+    });
+    if(threads[d]) stopsHtml += `<div class="thread">${threads[d]}</div>`;
+
+    section.innerHTML=`
+      <div class="day-rail">
+        <div class="day-no">0${d}</div>
+        <div class="stamp">${wkday} \u00b7 ${date}</div>
+        <span class="chip">Day ${d}</span>
+      </div>
+      <div class="day-body">
+        <h3>${meta.title}</h3>
+        <p class="theme">${meta.theme}</p>
+        ${stopsHtml}
+      </div>`;
+    root.appendChild(section);
+  }
+
+  /* ---------- Itinerary <-> map interaction ---------- */
+  function activate(id, el){
+    const m=markers[id]; if(!m) return;
+    if(activeEl) activeEl.querySelector('.seq')?.classList.remove('is-active');
+    if(activeMarker){ const i=activeMarker._icon?.querySelector('.pin'); i&&i.classList.remove('is-active'); }
+    activeEl=el; activeMarker=m;
+    const pinEl=m._icon?.querySelector('.pin'); pinEl&&pinEl.classList.add('is-active');
+
+    const mapTop=document.querySelector('.map-frame').getBoundingClientRect().top+window.scrollY-24;
+    window.scrollTo({top:mapTop, behavior:'smooth'});
+    setTimeout(()=>{ map.flyTo([m.getLatLng().lat,m.getLatLng().lng],13,{duration:.8}); m.openPopup(); },260);
+  }
+  document.querySelectorAll('.stop').forEach(el=>{
+    el.addEventListener('click',()=>activate(el.dataset.id,el));
+    el.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); activate(el.dataset.id,el);} });
+  });
+  // let users opt into wheel zoom once they click the map
+  map.on('click',()=>map.scrollWheelZoom.enable());
+</script>
+</body>
+</html>
